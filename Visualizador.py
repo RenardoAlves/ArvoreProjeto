@@ -33,11 +33,10 @@ class Visualizador(ArvoreAVL):
             "botao_remocao": (222, 13, 181),
             "botao_busca_leitura": (242, 181, 13),
             "botao_texto": (255, 255, 255),
-            "input_background": (255, 255, 255),
-            "input_borda": (200, 200, 200)
+            "input_background": (255, 255, 255)
         }
         
-        self.raio_node = 25
+        self.raio_no = 25
         self.espacamento_y = 100  # Espaçamento vertical entre nós
         
         self.input_texto = ""
@@ -47,10 +46,10 @@ class Visualizador(ArvoreAVL):
         self.atual_animacao = None
         self.progresso_animacoes = 0
         
-        # Área de visualização da árvore (abaixo dos controles)
+        # Área de visualização da árvore
         self.area_arvore_y = 150
         
-        # Sistema de arraste (panning)
+        # Sistema de arraste
         self.arrastando = False
         self.offset_x = 0
         self.offset_y = 0
@@ -60,6 +59,7 @@ class Visualizador(ArvoreAVL):
         self.criar_elementos_interface()
         
     def criar_elementos_interface(self):
+        
         botao_largura = self.largura * 0.1
         botao_altura = self.altura / 20
         
@@ -85,19 +85,23 @@ class Visualizador(ArvoreAVL):
         )
         
     def gerenciar_eventos(self):
-        mouse_x, mouse_y = pygame.mouse.get_pos()
+        
+        mouse_x, mouse_y = pygame.mouse.get_pos() # Obtém a posição do mouse
         
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 return False
                 
             if evento.type == pygame.MOUSEBUTTONDOWN:
-                # Verificar clique nos controles
+                # Verifica clique nos botões e campos
+                
                 if self.campo_input.collidepoint(evento.pos):
                     self.input_estado = True
+                    
                 elif self.botao_insercao.collidepoint(evento.pos):
                     self.inserir_valor()
-                # Verificar se o clique foi na área da árvore para arrastar
+                    
+                # Verifica se o clique foi na área da árvore para arrastar
                 elif mouse_y > self.area_arvore_y:
                     self.arrastando = True
                     self.mouse_pos_inicial_arraste = (mouse_x, mouse_y)
@@ -213,6 +217,7 @@ class Visualizador(ArvoreAVL):
         if not no:
             return
         
+        # Posiciona os nós na tela dependendo também do quanto o usuário arrastou a visualização
         pos_no = (no.pos[0] + self.offset_x, no.pos[1] + self.offset_y)
         pos_esq = (no.esquerda.pos[0] + self.offset_x, no.esquerda.pos[1] + self.offset_y) if no.esquerda else None
         pos_dir = (no.direita.pos[0] + self.offset_x, no.direita.pos[1] + self.offset_y) if no.direita else None
@@ -231,56 +236,61 @@ class Visualizador(ArvoreAVL):
         # Verificar se o nó está dentro da área visível (opcional, para performance)
         cor = self.paleta["no_destacado"] if no == no_destaque else self.paleta["no"]
         
-        pygame.draw.circle(self.tela, cor, pos_no, self.raio_node)
-        pygame.draw.circle(self.tela, self.paleta["borda"], pos_no, self.raio_node, 3)
+        pygame.draw.circle(self.tela, cor, pos_no, self.raio_no)
+        pygame.draw.circle(self.tela, self.paleta["borda"], pos_no, self.raio_no, 3)
 
         texto_valor = self.fonte.render(str(no.valor), True, self.paleta["text"])
-        rect_valor = texto_valor.get_rect(center=pos_no)
-        self.tela.blit(texto_valor, rect_valor)
+        retangulo_valor = texto_valor.get_rect(center=pos_no)
+        self.tela.blit(texto_valor, retangulo_valor)
         
-        texto_altura = self.fonte_menor.render(f"fb = {no.fatorBalanceamento()}", True, (80, 80, 100))
-        rect_altura = texto_altura.get_rect(center=(pos_no[0], pos_no[1] + self.raio_node + 15))
-        self.tela.blit(texto_altura, rect_altura)
+        texto_FB = self.fonte_menor.render(f"FB = {no.fatorBalanceamento()}", True, (80, 80, 100))
+        retangulo_altura = texto_FB.get_rect(center=(pos_no[0], pos_no[1] + self.raio_no + 15))
+        self.tela.blit(texto_FB, retangulo_altura)
 
     def desenhar_interface(self):
         
-        # Desenhar controles e abas
-        
+        # Desenha aba superior escura
         pygame.draw.rect(self.tela, self.paleta["borda"], self.aba_superior)
+        
+        # Desenha campo de input
         pygame.draw.rect(self.tela, self.paleta["input_background"], self.campo_input, border_radius=5)
         pygame.draw.rect(self.tela, self.paleta["borda"], self.campo_input, 2, border_radius=5)
         
         texto_input = self.fonte_maior.render(self.input_texto, True, self.paleta["text"])
         self.tela.blit(texto_input, (self.campo_input.x + 10, self.campo_input.y + 8))
+        # Blit passa o texto criado para a tela principal
         
         pygame.draw.rect(self.tela, self.paleta["botao_insercao"], self.botao_insercao, border_radius=5)
         texto_insercao = self.fonte_maior.render("Inserir", True, self.paleta["botao_texto"])
+        
         self.tela.blit(texto_insercao, (self.botao_insercao.x + 25, self.botao_insercao.y + 8))
 
     def executar(self):
-        clock = pygame.time.Clock()
+        
+        clock = pygame.time.Clock() # Inicializa o clock, para regular frames posteriormente
         rodando = True
         
         while rodando:
-            rodando = self.gerenciar_eventos()
+            
+            rodando = self.gerenciar_eventos() # Recebe false quando fecha a janela
             self.atualizar()
             
-            self.tela.fill(self.paleta["background"])
+            self.tela.fill(self.paleta["background"]) # Pinta a tela de branco
             
             # Desenhar área da árvore (com offset)
             if self._raiz:
                 no_destaque = None
                 if self.atual_animacao:
-                    tipo_acao = self.atual_animacao[0]
+                    tipo_acao = self.atual_animacao[0] # Armazena a instrução
                     if tipo_acao in ("visitar", "rotacionar", "criar"):
-                        no_destaque = self.atual_animacao[1]
+                        no_destaque = self.atual_animacao[1] # Vai destacar o nó visualmente se houver uma instrução em [1]
                 
                 self.desenhar_arvore(self._raiz, no_destaque)
             
             self.desenhar_interface()
             
             pygame.display.flip()
-            clock.tick(60)
+            clock.tick(60) # 60 FPS
         
         pygame.quit()
         sys.exit()
