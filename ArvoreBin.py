@@ -1,4 +1,4 @@
-from ArvoreProjeto import No
+from No import No
 
 class ArvoreBin:
     
@@ -14,6 +14,16 @@ class ArvoreBin:
             atual = atual.esquerda
             
         return atual
+    
+    # ----------------------------------------------------------------------   
+    
+    def _calcular_profundidade(self, no):
+        profundidade = 0
+        atual = no
+        while atual.pai is not None:
+            profundidade += 1
+            atual = atual.pai
+        return profundidade
     
     # ----------------------------------------------------------------------    
         

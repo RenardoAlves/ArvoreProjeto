@@ -5,19 +5,10 @@ class No:
         self.__pai = None
         self.__esquerda = None
         self.__direita = None
+        self.__pos = [0, 0]
+        self.__posicao_alvo = [0, 0]
         self.valor = valor
-            
-    # ----------------------------------------------------------------------
-    
-    def copiaNo(self, node):
-        
-        if(isinstance(node, No)):
 
-            self.__pai = node.__pai
-            self.__esquerda = node.__esquerda
-            self.__direita = node.__direita
-            self.__valor = node.__valor
-    
     # GETTERS --------------------------------------------------------------
     
     @property
@@ -35,6 +26,14 @@ class No:
     @property
     def valor(self):
         return self.__valor
+    
+    @property
+    def pos(self):
+        return self.__pos
+        
+    @property
+    def posicao_alvo(self):
+        return self.__posicao_alvo
 
     # SETTERS --------------------------------------------------------------
 
@@ -58,6 +57,14 @@ class No:
         
         if(isinstance(num, int) or num is None):
             self.__valor = num
+            
+    @pos.setter
+    def pos(self, value):
+        self.__pos = value
+        
+    @posicao_alvo.setter
+    def posicao_alvo(self, value):
+        self.__posicao_alvo = value
             
     # ----------------------------------------------------------------------
     
