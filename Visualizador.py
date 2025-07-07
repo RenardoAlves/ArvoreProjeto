@@ -10,7 +10,7 @@ class Visualizador(ArvoreAVL):
         super().__init__()
         pygame.init()
         
-        self.largura = 1600
+        self.largura = 1000
         self.altura = 800
         
         # Cria a tela e o título
@@ -87,6 +87,14 @@ class Visualizador(ArvoreAVL):
             botao_altura
         )
 
+        #UPDATE
+        self.botao_remocao = pygame.Rect(
+            self.botao_busca.right + (self.largura / 80),
+            self.altura / 30,
+            botao_largura,
+            botao_altura
+        )
+
         self.aba_superior = pygame.Rect(
              0,
              0,
@@ -113,6 +121,10 @@ class Visualizador(ArvoreAVL):
 
                 elif self.botao_busca.collidepoint(evento.pos):
                     self.buscar_valor()
+
+                #UPDATE
+                elif self.botao_remocao.collidepoint(evento.pos):
+                    self.remover_valor()
   
                 # Verifica se o clique foi na área da árvore para arrastar
                 elif mouse_y > self.area_arvore_y:
@@ -184,6 +196,30 @@ class Visualizador(ArvoreAVL):
                 self.fila_animacoes.append(acao)
                 if acao[0] == "encontrar":
                     self.no_encontrado = acao[1]  # armazena o nó encontrado
+
+            self.input_texto = ""  # limpa o campo de input
+
+        except ValueError:
+            self.input_texto = "Iiih..."
+            pygame.display.flip()
+            pygame.time.delay(500)
+            self.input_texto = ""
+
+    #UPDATE
+    def remover_valor(self):
+        if not self.input_texto:
+            return
+
+        try:
+            valor = int(self.input_texto)
+            self.historico = []  # limpa ações anteriores
+            self.no_encontrado = None  # limpa destaque anterior
+            self.no_destacado.clear()
+
+            resultado = self.deletaNo(valor)
+        
+            for acao in self.historico:
+                self.fila_animacoes.append(acao)
 
             self.input_texto = ""  # limpa o campo de input
 
@@ -321,6 +357,11 @@ class Visualizador(ArvoreAVL):
         pygame.draw.rect(self.tela, self.paleta["botao_busca_leitura"], self.botao_busca, border_radius=5)
         texto_busca = self.fonte_maior.render("Buscar", True, self.paleta["botao_texto"])
         self.tela.blit(texto_busca, (self.botao_busca.x + 25, self.botao_busca.y + 8))
+
+        #UPDATE
+        pygame.draw.rect(self.tela, self.paleta["botao_remocao"], self.botao_remocao, border_radius=5)
+        texto_remocao = self.fonte_maior.render("Remover", True, self.paleta["botao_texto"])
+        self.tela.blit(texto_remocao, (self.botao_remocao.x + 25, self.botao_remocao.y + 8))
 
     def executar(self):
         
