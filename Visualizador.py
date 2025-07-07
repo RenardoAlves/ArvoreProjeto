@@ -30,12 +30,14 @@ class Visualizador(ArvoreAVL):
             "text": (70, 70, 80),
             "line": (70, 70, 80),
             "botao_insercao": (13, 222, 181),
-            "botao_remocao": (222, 13, 181),
-            "botao_busca_leitura": (242, 181, 13),
+            "botao_remocao": (13, 222, 181),
+            "botao_busca_leitura": (13, 222, 181),
             "botao_texto": (255, 255, 255),
-            "input_background": (255, 255, 255)
+            "input_background": (255, 255, 255),
+            "no_buscado":(180,240,250)
         }
         
+        self.no_encontrado = None
         self.raio_no = 25
         self.espacamento_y = 100  # Espaçamento vertical entre nós
         
@@ -45,6 +47,7 @@ class Visualizador(ArvoreAVL):
         self.fila_animacoes = deque()
         self.atual_animacao = None
         self.progresso_animacoes = 0
+        self.no_destacado = set()
         
         # Área de visualização da árvore
         self.area_arvore_y = 150
@@ -76,7 +79,14 @@ class Visualizador(ArvoreAVL):
              botao_largura,
              botao_altura
         )
-        
+
+        self.botao_busca = pygame.Rect(
+            self.botao_insercao.right + (self.largura / 80),
+            self.altura / 30,
+            botao_largura,
+            botao_altura
+        )
+
         self.aba_superior = pygame.Rect(
              0,
              0,
@@ -100,7 +110,10 @@ class Visualizador(ArvoreAVL):
                     
                 elif self.botao_insercao.collidepoint(evento.pos):
                     self.inserir_valor()
-                    
+
+                elif self.botao_busca.collidepoint(evento.pos):
+                    self.buscar_valor()
+  
                 # Verifica se o clique foi na área da árvore para arrastar
                 elif mouse_y > self.area_arvore_y:
                     self.arrastando = True
@@ -120,13 +133,18 @@ class Visualizador(ArvoreAVL):
                 self.offset_x = self.offset_inicial_arraste[0] + dx
                 self.offset_y = self.offset_inicial_arraste[1] + dy
                 
-            if evento.type == pygame.KEYDOWN and self.input_estado:
+            if evento.type == pygame.KEYDOWN:
+                # Trata o Enter de forma diferente dependendo do contexto
                 if evento.key == pygame.K_RETURN:
-                    self.inserir_valor()
-                elif evento.key == pygame.K_BACKSPACE:
-                    self.input_texto = self.input_texto[:-1]
-                elif evento.unicode.isdigit():
-                    self.input_texto += evento.unicode
+                    if self.input_estado:
+                        self.no_encontrado = None #remove o destaque do no buscado quando precionar enter
+                        self.inserir_valor()
+                
+                elif self.input_estado:
+                    if evento.key == pygame.K_BACKSPACE:
+                        self.input_texto = self.input_texto[:-1]
+                    elif evento.unicode.isdigit():
+                        self.input_texto += evento.unicode
         
         return True
     
@@ -137,12 +155,38 @@ class Visualizador(ArvoreAVL):
         try:
             valor = int(self.input_texto)
             self.insereNo(valor)
-            
+            self.no_encontrado = None  
+
             for acao in self.historico:
                 self.fila_animacoes.append(acao)
             
             self.input_texto = ""
             
+        except ValueError:
+            self.input_texto = "Iiih..."
+            pygame.display.flip()
+            pygame.time.delay(500)
+            self.input_texto = ""
+
+    def buscar_valor(self):
+        if not self.input_texto:
+            return
+
+        try:
+            valor = int(self.input_texto)
+            self.historico = []  # limpa ações anteriores
+            self.no_encontrado = None  # limpa destaque anterior
+            self.no_destacado.clear()
+
+            resultado = self.buscaBin(valor)
+        
+            for acao in self.historico:
+                self.fila_animacoes.append(acao)
+                if acao[0] == "encontrar":
+                    self.no_encontrado = acao[1]  # armazena o nó encontrado
+
+            self.input_texto = ""  # limpa o campo de input
+
         except ValueError:
             self.input_texto = "Iiih..."
             pygame.display.flip()
@@ -184,20 +228,24 @@ class Visualizador(ArvoreAVL):
         if not self.atual_animacao and self.fila_animacoes:
             self.atual_animacao = self.fila_animacoes.popleft()
             self.progresso_animacoes = 0
-        
+
         if self.atual_animacao:
             tipo_acao = self.atual_animacao[0]
             
-            if tipo_acao in ("visitar", "criar"):
+            if tipo_acao in ("visitar", "criar", "encontrar"):
                 self.progresso_animacoes += 0.02 * self.velocidade_animacoes
                 if self.progresso_animacoes >= 1:
+                    if self.atual_animacao[1]:
+                        self.no_destacado.add(self.atual_animacao[1])
                     self.atual_animacao = None
+                    self.no_destaque = None
+            
             
             elif tipo_acao == "rotacionar":
                 self.progresso_animacoes += 0.01 * self.velocidade_animacoes
                 if self.progresso_animacoes >= 1:
                     self.atual_animacao = None
-        
+
         if self._raiz:
             self.animar_nos(self._raiz)
     
@@ -234,7 +282,12 @@ class Visualizador(ArvoreAVL):
         
         # Desenha o nó
         # Verificar se o nó está dentro da área visível (opcional, para performance)
-        cor = self.paleta["no_destacado"] if no == no_destaque else self.paleta["no"]
+        if no == self.no_encontrado and no in self.no_destacado:
+            cor = self.paleta["no_buscado"]  # Cor especial para nó encontrado
+        elif no == no_destaque:
+            cor = self.paleta["no_destacado"]
+        else:
+            cor = self.paleta["no"]
         
         pygame.draw.circle(self.tela, cor, pos_no, self.raio_no)
         pygame.draw.circle(self.tela, self.paleta["borda"], pos_no, self.raio_no, 3)
@@ -265,6 +318,10 @@ class Visualizador(ArvoreAVL):
         
         self.tela.blit(texto_insercao, (self.botao_insercao.x + 25, self.botao_insercao.y + 8))
 
+        pygame.draw.rect(self.tela, self.paleta["botao_busca_leitura"], self.botao_busca, border_radius=5)
+        texto_busca = self.fonte_maior.render("Buscar", True, self.paleta["botao_texto"])
+        self.tela.blit(texto_busca, (self.botao_busca.x + 25, self.botao_busca.y + 8))
+
     def executar(self):
         
         clock = pygame.time.Clock() # Inicializa o clock, para regular frames posteriormente
@@ -282,7 +339,7 @@ class Visualizador(ArvoreAVL):
                 no_destaque = None
                 if self.atual_animacao:
                     tipo_acao = self.atual_animacao[0] # Armazena a instrução
-                    if tipo_acao in ("visitar", "rotacionar", "criar"):
+                    if tipo_acao in ("visitar", "rotacionar", "criar","encontrar"):
                         no_destaque = self.atual_animacao[1] # Vai destacar o nó visualmente se houver uma instrução em [1]
                 
                 self.desenhar_arvore(self._raiz, no_destaque)

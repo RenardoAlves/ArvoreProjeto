@@ -4,7 +4,7 @@ class ArvoreBin:
     
     def __init__(self):
         self._raiz = None
-        
+        self.historico = []
     # ----------------------------------------------------------------------    
         
     def menorValor(self, node):
@@ -77,15 +77,19 @@ class ArvoreBin:
             return None
         
         if num > node.valor:
+            self.historico.append(("visitar", node))
             return self._busca_bin_rec(node.direita, num)
         
         elif num < node.valor:
+            self.historico.append(("visitar", node))
             return self._busca_bin_rec(node.esquerda, num)
         
+        self.historico.append(("encontrar", node))
         return node
     
         # ----------------------------------------------------------------------
     
+
     def _em_ordem_rec(self, node):
         
         if node is not None:

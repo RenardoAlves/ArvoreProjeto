@@ -5,7 +5,6 @@ class ArvoreAVL(ArvoreBin):
     
     def __init__(self):
         super().__init__()
-        self.historico = []
     
     # ------------------------------------------------------------------------
     
@@ -95,3 +94,5 @@ class ArvoreAVL(ArvoreBin):
         if isinstance(valor, int):
             self.historico = []
             self._raiz = self._deleta_rec(self._raiz, valor)
+
+    # ----------------------------------------------------------------------    
