@@ -17,7 +17,7 @@ class Visualizador(ArvoreAVL):
         self.tela = pygame.display.set_mode((self.largura, self.altura), pygame.RESIZABLE)
         pygame.display.set_caption("Visualizador de Árvore AVL")
         
-        self.fonte_maior = pygame.font.SysFont("Roboto", 48, bold=True)
+        self.fonte_maior = pygame.font.SysFont("Roboto", 44, bold=True)
         self.fonte = pygame.font.SysFont("Arial", 18, bold=True)
         self.fonte_menor = pygame.font.SysFont("Arial", 14)
 
@@ -213,8 +213,7 @@ class Visualizador(ArvoreAVL):
 
         try:
             valor = int(self.input_texto)
-            self.historico = []  # limpa ações anteriores
-            self.no_encontrado = None  # limpa destaque anterior
+            self.historico = []
             self.no_removido = self.buscaBin(valor)
             self.no_rem_pai = self.no_removido.pai if self.no_removido else None
         
@@ -224,7 +223,7 @@ class Visualizador(ArvoreAVL):
                 else:
                     self.fila_animacoes.append(acao)
 
-            self.input_texto = ""  # limpa o campo de input
+            self.input_texto = ""
 
         except ValueError:
             self.input_texto = "Iiih..."
@@ -282,7 +281,7 @@ class Visualizador(ArvoreAVL):
             if tipo_acao in ("visitar", "inserir", "encontrar"):
                 self.progresso_animacoes += 0.02 * self.velocidade_animacoes
                 if self.progresso_animacoes >= 1:
-                    if self.atual_animacao[1] and self.no_destacado:
+                    if self.atual_animacao[1] and self.no_encontrado:
                         self.no_destacado.add(self.atual_animacao[1])
                     self.atual_animacao = None
                     self.no_destaque = None
@@ -293,7 +292,7 @@ class Visualizador(ArvoreAVL):
                     self.deletaNo(self.no_removido.valor)
                     self.no_removido = None
                     self.atual_animacao = None
-                    self.no_destacado = None
+                    self.no_destaque = None
 
             
             elif tipo_acao == "rotacionar":
