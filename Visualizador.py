@@ -10,16 +10,16 @@ class Visualizador(ArvoreAVL):
         super().__init__()
         pygame.init()
         
-        self.largura = 1000
+        self.largura = 1600
         self.altura = 800
         
         # Cria a tela e o título
         self.tela = pygame.display.set_mode((self.largura, self.altura), pygame.RESIZABLE)
         pygame.display.set_caption("Visualizador de Árvore AVL")
         
-        self.fonte_maior = pygame.font.SysFont("Arial", 26)
-        self.fonte = pygame.font.SysFont("Arial", 20)
-        self.fonte_menor = pygame.font.SysFont("Arial", 16)
+        self.fonte_maior = pygame.font.SysFont("Roboto", 48, bold=True)
+        self.fonte = pygame.font.SysFont("Arial", 18, bold=True)
+        self.fonte_menor = pygame.font.SysFont("Arial", 14)
 
         # Define as cores de elementos
         self.paleta = {
@@ -29,15 +29,16 @@ class Visualizador(ArvoreAVL):
             "borda": (70, 70, 80),
             "text": (70, 70, 80),
             "line": (70, 70, 80),
-            "botao_insercao": (13, 222, 181),
-            "botao_remocao": (13, 222, 181),
-            "botao_busca_leitura": (13, 222, 181),
+            "botao_insercao": (13, 200, 160),
+            "botao_remocao": (222, 13, 121),
+            "botao_busca_leitura": (222, 181, 13),
             "botao_texto": (255, 255, 255),
             "input_background": (255, 255, 255),
             "no_buscado":(180,240,250)
         }
         
         self.no_encontrado = None
+        self.no_removido = None
         self.raio_no = 25
         self.espacamento_y = 100  # Espaçamento vertical entre nós
         
@@ -76,22 +77,22 @@ class Visualizador(ArvoreAVL):
         self.botao_insercao = pygame.Rect(
              self.largura / 8 + (self.largura / 80),
              self.altura / 30,
-             botao_largura,
+             botao_largura + 20,
              botao_altura
-        )
-
-        self.botao_busca = pygame.Rect(
-            self.botao_insercao.right + (self.largura / 80),
-            self.altura / 30,
-            botao_largura,
-            botao_altura
         )
 
         #UPDATE
         self.botao_remocao = pygame.Rect(
-            self.botao_busca.right + (self.largura / 80),
+            self.botao_insercao.right + (self.largura / 80),
             self.altura / 30,
-            botao_largura,
+            botao_largura + 20,
+            botao_altura
+        )
+        
+        self.botao_busca = pygame.Rect(
+            self.botao_remocao.right + (self.largura / 80),
+            self.altura / 30,
+            botao_largura + 20,
             botao_altura
         )
 
@@ -146,18 +147,18 @@ class Visualizador(ArvoreAVL):
                 self.offset_y = self.offset_inicial_arraste[1] + dy
                 
             if evento.type == pygame.KEYDOWN:
-                # Trata o Enter de forma diferente dependendo do contexto
-                if evento.key == pygame.K_RETURN:
-                    if self.input_estado:
-                        self.no_encontrado = None #remove o destaque do no buscado quando precionar enter
-                        self.inserir_valor()
-                
-                elif self.input_estado:
+                if self.input_estado:
                     if evento.key == pygame.K_BACKSPACE:
                         self.input_texto = self.input_texto[:-1]
                     elif evento.unicode.isdigit():
                         self.input_texto += evento.unicode
-        
+                    elif evento.key == pygame.K_b:
+                        self.buscar_valor()
+                    elif evento.key == pygame.K_r:
+                        self.remover_valor()
+                    elif evento.key == pygame.K_RETURN or pygame.K_i:
+                        self.no_encontrado = None #remove o destaque do no buscado quando pressionar enter
+                        self.inserir_valor()
         return True
     
     def inserir_valor(self):
@@ -190,7 +191,7 @@ class Visualizador(ArvoreAVL):
             self.no_encontrado = None  # limpa destaque anterior
             self.no_destacado.clear()
 
-            resultado = self.buscaBin(valor)
+            self.buscaBin(valor)
         
             for acao in self.historico:
                 self.fila_animacoes.append(acao)
@@ -214,12 +215,14 @@ class Visualizador(ArvoreAVL):
             valor = int(self.input_texto)
             self.historico = []  # limpa ações anteriores
             self.no_encontrado = None  # limpa destaque anterior
-            self.no_destacado.clear()
-
-            resultado = self.deletaNo(valor)
+            self.no_removido = self.buscaBin(valor)
+            self.no_rem_pai = self.no_removido.pai if self.no_removido else None
         
             for acao in self.historico:
-                self.fila_animacoes.append(acao)
+                if acao[0] == "encontrar":
+                    self.fila_animacoes.append(("remover", acao[1]))
+                else:
+                    self.fila_animacoes.append(acao)
 
             self.input_texto = ""  # limpa o campo de input
 
@@ -232,9 +235,12 @@ class Visualizador(ArvoreAVL):
     def atualizar_layout(self, raiz, x, y, dx):
         if not raiz:
             return
-        
+              
         raiz.posicao_alvo = (x, y)
         
+        if self.no_removido and raiz is self.no_removido and self.no_rem_pai:
+            raiz.posicao_alvo = self.no_rem_pai.pos
+
         if raiz.esquerda:
             self.atualizar_layout(raiz.esquerda, x - dx, y + self.espacamento_y, dx / 2)
         
@@ -242,17 +248,22 @@ class Visualizador(ArvoreAVL):
             self.atualizar_layout(raiz.direita, x + dx, y + self.espacamento_y, dx / 2)
 
     def animar_movimento_no(self, no, progresso):
-        ease_progress = 1 - (1 - progresso) ** 2
         
-        if no.pai is None: 
-            x0, y0 = no.pos
-        else: 
+        suavizar = 1 - (1 - progresso) ** 2
+        
+        if no.pai and no is not self.no_removido:
             x0, y0 = no.pai.pos
+        else:
+            x0, y0 = no.pos
+
+        if no is self.no_removido and no.pai:
+            x0, y0 = no.pos
+            x_final, y_final = no.pai.pos
+        else:
+            x_final, y_final = no.posicao_alvo
         
-        x_final, y_final = no.posicao_alvo
-        
-        x = x0 + (x_final - x0) * ease_progress
-        y = y0 + (y_final - y0) * ease_progress
+        x = x0 + (x_final - x0) * suavizar
+        y = y0 + (y_final - y0) * suavizar
         
         no.pos = (x, y)
 
@@ -268,14 +279,22 @@ class Visualizador(ArvoreAVL):
         if self.atual_animacao:
             tipo_acao = self.atual_animacao[0]
             
-            if tipo_acao in ("visitar", "criar", "encontrar"):
+            if tipo_acao in ("visitar", "inserir", "encontrar"):
                 self.progresso_animacoes += 0.02 * self.velocidade_animacoes
                 if self.progresso_animacoes >= 1:
-                    if self.atual_animacao[1]:
+                    if self.atual_animacao[1] and self.no_destacado:
                         self.no_destacado.add(self.atual_animacao[1])
                     self.atual_animacao = None
                     self.no_destaque = None
             
+            elif tipo_acao == "remover" and self.no_removido:
+                self.progresso_animacoes += 0.1 * self.velocidade_animacoes
+                if self.progresso_animacoes >= 1:
+                    self.deletaNo(self.no_removido.valor)
+                    self.no_removido = None
+                    self.atual_animacao = None
+                    self.no_destacado = None
+
             
             elif tipo_acao == "rotacionar":
                 self.progresso_animacoes += 0.01 * self.velocidade_animacoes
@@ -298,7 +317,10 @@ class Visualizador(ArvoreAVL):
 
     def desenhar_arvore(self, no, no_destaque=None):
         
-        if not no:
+        if not no or no.valor is None:
+            return
+        
+        if not no.pai and not no.esquerda and not no.direita and no != self._raiz:
             return
         
         # Posiciona os nós na tela dependendo também do quanto o usuário arrastou a visualização
@@ -307,10 +329,10 @@ class Visualizador(ArvoreAVL):
         pos_dir = (no.direita.pos[0] + self.offset_x, no.direita.pos[1] + self.offset_y) if no.direita else None
         
         # Ligações
-        if no.esquerda:
+        if no.esquerda and no.esquerda.valor is not None:
             pygame.draw.line(self.tela, self.paleta["line"], pos_no, pos_esq, 3)
         
-        if no.direita:
+        if no.direita and no.direita.valor is not None:
             pygame.draw.line(self.tela, self.paleta["line"], pos_no, pos_dir, 3)
         
         self.desenhar_arvore(no.esquerda, no_destaque)
@@ -332,9 +354,9 @@ class Visualizador(ArvoreAVL):
         retangulo_valor = texto_valor.get_rect(center=pos_no)
         self.tela.blit(texto_valor, retangulo_valor)
         
-        texto_FB = self.fonte_menor.render(f"FB = {no.fatorBalanceamento()}", True, (80, 80, 100))
-        retangulo_altura = texto_FB.get_rect(center=(pos_no[0], pos_no[1] + self.raio_no + 15))
-        self.tela.blit(texto_FB, retangulo_altura)
+        #texto_FB = self.fonte_menor.render(f"FB = {no.fatorBalanceamento()}", True, (80, 80, 100))
+        #retangulo_altura = texto_FB.get_rect(center=(pos_no[0], pos_no[1] + self.raio_no + 15))
+        #self.tela.blit(texto_FB, retangulo_altura)
 
     def desenhar_interface(self):
         
@@ -346,22 +368,21 @@ class Visualizador(ArvoreAVL):
         pygame.draw.rect(self.tela, self.paleta["borda"], self.campo_input, 2, border_radius=5)
         
         texto_input = self.fonte_maior.render(self.input_texto, True, self.paleta["text"])
-        self.tela.blit(texto_input, (self.campo_input.x + 10, self.campo_input.y + 8))
+        self.tela.blit(texto_input, (self.campo_input.x + 10, self.campo_input.y + 5))
         # Blit passa o texto criado para a tela principal
         
         pygame.draw.rect(self.tela, self.paleta["botao_insercao"], self.botao_insercao, border_radius=5)
-        texto_insercao = self.fonte_maior.render("Inserir", True, self.paleta["botao_texto"])
-        
-        self.tela.blit(texto_insercao, (self.botao_insercao.x + 25, self.botao_insercao.y + 8))
+        texto_insercao = self.fonte_maior.render("INSERIR", True, self.paleta["botao_texto"])
+        self.tela.blit(texto_insercao, (self.botao_insercao.x + 18, self.botao_insercao.y + 6))
 
         pygame.draw.rect(self.tela, self.paleta["botao_busca_leitura"], self.botao_busca, border_radius=5)
-        texto_busca = self.fonte_maior.render("Buscar", True, self.paleta["botao_texto"])
-        self.tela.blit(texto_busca, (self.botao_busca.x + 25, self.botao_busca.y + 8))
+        texto_busca = self.fonte_maior.render("BUSCAR", True, self.paleta["botao_texto"])
+        self.tela.blit(texto_busca, (self.botao_busca.x + 18, self.botao_busca.y + 6))
 
         #UPDATE
         pygame.draw.rect(self.tela, self.paleta["botao_remocao"], self.botao_remocao, border_radius=5)
-        texto_remocao = self.fonte_maior.render("Remover", True, self.paleta["botao_texto"])
-        self.tela.blit(texto_remocao, (self.botao_remocao.x + 25, self.botao_remocao.y + 8))
+        texto_remocao = self.fonte_maior.render("REMOVER", True, self.paleta["botao_texto"])
+        self.tela.blit(texto_remocao, (self.botao_remocao.x + 6, self.botao_remocao.y + 6))
 
     def executar(self):
         
@@ -380,7 +401,7 @@ class Visualizador(ArvoreAVL):
                 no_destaque = None
                 if self.atual_animacao:
                     tipo_acao = self.atual_animacao[0] # Armazena a instrução
-                    if tipo_acao in ("visitar", "rotacionar", "criar","encontrar"):
+                    if tipo_acao in ("visitar", "rotacionar", "inserir", "encontrar", "remover"):
                         no_destaque = self.atual_animacao[1] # Vai destacar o nó visualmente se houver uma instrução em [1]
                 
                 self.desenhar_arvore(self._raiz, no_destaque)

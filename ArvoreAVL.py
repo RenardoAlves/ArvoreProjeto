@@ -10,13 +10,13 @@ class ArvoreAVL(ArvoreBin):
     
     def _insere_rec(self, node, valor):
 
-        if node is not None:
+        if node is not None and node.valor is not None:
             self.historico.append(("visitar", node))
             
-        if node is None:
+        if node is None or node.valor is None:
             
             novo_no = NoAVL(valor)
-            self.historico.append(("criar", novo_no))
+            self.historico.append(("inserir", novo_no))
             return novo_no
             
         if valor < node.valor:
@@ -46,7 +46,7 @@ class ArvoreAVL(ArvoreBin):
         
         node = super()._deleta_rec(node, valor)
         
-        if node is None:
+        if node is None or node.valor is None:
             return None
             
         node.atualizaAltura()

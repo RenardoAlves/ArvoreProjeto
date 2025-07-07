@@ -21,13 +21,13 @@ class NoAVL(No):
     # ------------------------------------------------------------------------
 
     def atualizaAltura(self):
-        alturaESQ = self.esquerda.altura if self.esquerda else -1
-        alturaDIR = self.direita.altura if self.direita else -1
+        alturaESQ = self.esquerda.altura if self.esquerda and self.esquerda.valor is not None else -1
+        alturaDIR = self.direita.altura if self.direita and self.direita.valor is not None else -1
         self.altura = max(alturaESQ, alturaDIR) + 1
 
     def fatorBalanceamento(self):
-        alturaESQ = self.esquerda.altura if self.esquerda else -1
-        alturaDIR = self.direita.altura if self.direita else -1
+        alturaESQ = self.esquerda.altura if self.esquerda and self.esquerda.valor is not None else -1
+        alturaDIR = self.direita.altura if self.direita and self.direita.valor is not None else -1
         return alturaDIR - alturaESQ
 
     # ------------------------------------------------------------------------

@@ -5,6 +5,49 @@ class ArvoreBin:
     def __init__(self):
         self._raiz = None
         self.historico = []
+        
+    # ----------------------------------------------------------------------
+
+    def _em_ordem_rec(self, node):
+        
+        if node is not None:
+            self._em_ordem_rec(node.esquerda)
+            print(node)
+            self._em_ordem_rec(node.direita)
+            
+    # ----------------------------------------------------------------------
+            
+    def _pre_ordem_rec(self, node):
+        
+        if node is not None:
+            print(node)
+            self._pre_ordem_rec(node.esquerda)
+            self._pre_ordem_rec(node.direita)
+            
+    # ----------------------------------------------------------------------
+            
+    def _pos_ordem_rec(self, node):
+        
+        if node is not None:
+            self._pos_ordem_rec(node.esquerda)
+            self._pos_ordem_rec(node.direita)
+            print(node)
+    
+    # ----------------------------------------------------------------------    
+        
+    def emOrdem(self):
+        self._em_ordem_rec(self._raiz)
+        
+    # ----------------------------------------------------------------------    
+        
+    def preOrdem(self):
+        self._pre_ordem_rec(self._raiz)
+        
+    # ----------------------------------------------------------------------    
+        
+    def posOrdem(self):
+        self._pos_ordem_rec(self._raiz)    
+    
     # ----------------------------------------------------------------------    
         
     def menorValor(self, node):
@@ -41,81 +84,59 @@ class ArvoreBin:
         return node
     
     # ----------------------------------------------------------------------    
-        
     def _deleta_rec(self, node, num):
-        
-        if node is None:
+        if node is None or node.valor is None:
             return None
-            
+        
         if num < node.valor:
+            
             node.esquerda = self._deleta_rec(node.esquerda, num)
-            
         elif num > node.valor:
+            
             node.direita = self._deleta_rec(node.direita, num)
-            
         else:
-            if node.esquerda is None:
-                return node.direita
             
-            elif node.direita is None:
-                return node.esquerda
+            if node.esquerda is None or node.esquerda.valor is None:
+                
+                node_removido = node.direita
+                node.valor = None
+                node.esquerda = node.direita = None
+                return node_removido
+            
+            elif node.direita is None or node.direita.valor is None:
+                
+                node_removido = node.esquerda
+                node.valor = None
+                node.esquerda = node.direita = None
+                return node_removido
             
             else:
+                
                 temp = self.menorValor(node.direita)
-                
                 node.valor = temp.valor
-                
                 node.direita = self._deleta_rec(node.direita, temp.valor)
                 
         return node
-    
     # ----------------------------------------------------------------------        
             
     def _busca_bin_rec(self, node, num):
         
-        if node is None:
+        if node is None or node.valor is None:
             return None
         
+        self.historico.append(("visitar", node))
+        
         if num > node.valor:
-            self.historico.append(("visitar", node))
             return self._busca_bin_rec(node.direita, num)
         
         elif num < node.valor:
-            self.historico.append(("visitar", node))
             return self._busca_bin_rec(node.esquerda, num)
         
         self.historico.append(("encontrar", node))
+        
         return node
     
-        # ----------------------------------------------------------------------
-    
-
-    def _em_ordem_rec(self, node):
-        
-        if node is not None:
-            self._em_ordem_rec(node.esquerda)
-            print(node)
-            self._em_ordem_rec(node.direita)
-            
-    # ----------------------------------------------------------------------
-            
-    def _pre_ordem_rec(self, node):
-        
-        if node is not None:
-            print(node)
-            self._pre_ordem_rec(node.esquerda)
-            self._pre_ordem_rec(node.direita)
-            
-    # ----------------------------------------------------------------------
-            
-    def _pos_ordem_rec(self, node):
-        
-        if node is not None:
-            self._pos_ordem_rec(node.esquerda)
-            self._pos_ordem_rec(node.direita)
-            print(node)
-            
-    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------self.emOrdem()
     
     def insereNo(self, num):
         if isinstance(num, int):
@@ -132,18 +153,3 @@ class ArvoreBin:
     def buscaBin(self, num):
         if isinstance(num, int):
             return self._busca_bin_rec(self._raiz, num)
-        
-    # ----------------------------------------------------------------------    
-        
-    def emOrdem(self):
-        self._em_ordem_rec(self._raiz)
-        
-    # ----------------------------------------------------------------------    
-        
-    def preOrdem(self):
-        self._pre_ordem_rec(self._raiz)
-        
-    # ----------------------------------------------------------------------    
-        
-    def posOrdem(self):
-        self._pos_ordem_rec(self._raiz)
