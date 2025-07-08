@@ -697,7 +697,7 @@ class Visualizador(ArvoreAVL):
 
         # Cria uma superfície semi-transparente
         instrucoes_surface = pygame.Surface((250, 200), pygame.SRCALPHA)
-        instrucoes_surface.fill((0, 0, 0, 100))  # Preto com 40% de opacidade
+        instrucoes_surface.fill((0, 0, 0, 100)) # Quarto parâmetro é para ajustar a opacidade
     
         # Renderiza cada linha de instrução
         y_offset = 10
@@ -730,7 +730,7 @@ class Visualizador(ArvoreAVL):
         self.desenhar_arvore(no.direita, no_destaque)
         
         # Desenha o nó
-        # Verifica se o nó está dentro da área visível (opcional, para performance)
+        # Verifica se o nó está dentro da área visível
         if no == self.no_encontrado and no in self.no_destacado:
             cor = self.paleta["no_buscado"]
         elif no == no_destaque:
@@ -827,3 +827,4 @@ class Visualizador(ArvoreAVL):
 if __name__ == "__main__":
     visualizador = Visualizador()
     visualizador.executar()
+
