@@ -774,7 +774,6 @@ class Visualizador(ArvoreAVL):
             
             if primeiroNum and primeiroNum == (int)(numero):
                 self.count += 1
-                print(self.count)
             
             if self.count > 32:
                 self.lendo = False
