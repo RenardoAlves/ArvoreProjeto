@@ -4,23 +4,25 @@ class ArvoreBin:
     
     def __init__(self):
         self._raiz = None
+        self.leitura = []
         self.historico = []
         
     # ----------------------------------------------------------------------
 
     def _em_ordem_rec(self, node):
         
-        if node is not None:
+        if node is not None and node.valor is not None:
+            
             self._em_ordem_rec(node.esquerda)
-            print(node)
+            self.leitura.append(node.valor)
             self._em_ordem_rec(node.direita)
             
     # ----------------------------------------------------------------------
             
     def _pre_ordem_rec(self, node):
         
-        if node is not None:
-            print(node)
+        if node is not None and node.valor is not None:
+            self.leitura.append(node.valor)
             self._pre_ordem_rec(node.esquerda)
             self._pre_ordem_rec(node.direita)
             
@@ -28,24 +30,27 @@ class ArvoreBin:
             
     def _pos_ordem_rec(self, node):
         
-        if node is not None:
+        if node is not None and node.valor is not None:
             self._pos_ordem_rec(node.esquerda)
             self._pos_ordem_rec(node.direita)
-            print(node)
+            self.leitura.append(node.valor)
     
     # ----------------------------------------------------------------------    
         
     def emOrdem(self):
+        self.leitura = []
         self._em_ordem_rec(self._raiz)
         
     # ----------------------------------------------------------------------    
         
     def preOrdem(self):
+        self.leitura = []
         self._pre_ordem_rec(self._raiz)
         
     # ----------------------------------------------------------------------    
         
     def posOrdem(self):
+        self.leitura = []
         self._pos_ordem_rec(self._raiz)    
     
     # ----------------------------------------------------------------------    

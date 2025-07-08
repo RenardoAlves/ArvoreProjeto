@@ -39,17 +39,17 @@ class No:
 
     @pai.setter
     def pai(self, node):
-        if(isinstance(node, No)):
+        if node is None or (isinstance(node, No)):
             self.__pai = node
     
     @esquerda.setter
     def esquerda(self, node):
-        if(isinstance(node, No)):
+        if node is None or (isinstance(node, No)):
             self.__esquerda = node
             
     @direita.setter
     def direita(self, node):
-        if(isinstance(node, No)):
+        if node is None or (isinstance(node, No)):
             self.__direita = node
 
     @valor.setter
