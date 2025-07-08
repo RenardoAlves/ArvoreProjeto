@@ -484,21 +484,30 @@ class Visualizador(ArvoreAVL):
 # Método responsável pelo gerenciamento das animações -----------------------------------------------------------------------
 
     def atualizar(self):
-        
-        # Fase 1: animação do sucessor indo até a posição do nó removido
+        # 1. Animação de sucessor durante a remoção
+        # Se está ocorrendo a animação do sucessor (caso de remoção de nó com dois filhos)
         if getattr(self, "animando_sucessor", False) and self.sucessor_remocao and self.sucessor_pos_antiga and self.sucessor_pos_alvo:
+            # Calcula o progresso da animação (t varia de 0 a 1)
             t = min(self.anim_frame / self.anim_passos, 1)
+            # Suaviza a transição para movimento mais natural
             suavizar = 1 - (1 - t) ** 2
+            # Pega as coordenadas inicial e final do sucessor
             x0, y0 = self.sucessor_pos_antiga
             x1, y1 = self.sucessor_pos_alvo
+            # Calcula a posição intermediária do sucessor conforme o frame atual
             x = x0 + (x1 - x0) * suavizar
             y = y0 + (y1 - y0) * suavizar
             self.sucessor_remocao.pos = (x, y)
-
+    
+            # Avança o frame da animação
             self.anim_frame += 1
+    
+            # Se a animação chegou ao fim:
             if self.anim_frame > self.anim_passos:
                 valor = self.no_removido.valor
+                # Remove o nó logicamente na árvore
                 self.deletaNo(valor)
+                # Atualiza o layout da árvore (posições dos nós remanescentes)
                 if self._raiz:
                     self.atualizar_layout(
                         self._raiz,
@@ -509,30 +518,35 @@ class Visualizador(ArvoreAVL):
                     self.posicoes_novas = {no: no.posicao_alvo for no in self.iterar_nos(self._raiz)}
                 else:
                     self.posicoes_novas = {}
-
+    
+                # Reseta variáveis de animação do sucessor
                 self.anim_frame = 0
                 self.animando_sucessor = False
                 self.sucessor_antigo_filho_direita = None
-                self.animando = True
+                self.animando = True  # Sinaliza que vai iniciar animação global dos nós
                 self.no_destacado = set()
                 self.no_encontrado = None
-
-            return  # Não faz mais nada enquanto anima o sucessor
-
+    
+            return  # Enquanto anima sucessor, não executa mais nada deste método
+    
+        # 2. Animação de movimento de filho folha (caso de remoção simples)
+        # Se a animação ativa é o movimento de um filho folha promovido
         if self.atual_animacao and self.atual_animacao[0] == "mover_filho_folha":
             filho = self.atual_animacao[1]
             t = min(self.anim_frame / self.anim_passos, 1)
             suavizar = 1 - (1 - t) ** 2
+            # Calcula posição de transição do filho
             x0, y0 = self.filho_pos_antiga
             x1, y1 = self.filho_pos_nova
             x = x0 + (x1 - x0) * suavizar
             y = y0 + (y1 - y0) * suavizar
             filho.pos = (x, y)
             self.anim_frame += 1
+    
+            # Quando termina a animação:
             if self.anim_frame > self.anim_passos:
                 valor = self.no_removido.valor
-                
-                # Atualiza as posições antigas antes da deleção
+                # Atualiza layout antes de remover o nó, garantindo que o filho está na posição correta
                 if self._raiz:
                     self.atualizar_layout(
                         self._raiz,
@@ -540,8 +554,7 @@ class Visualizador(ArvoreAVL):
                         self.area_arvore_y + 50,
                         self.largura / 4
                     )
-                    
-                    # Impede movimento duplo do filho "promovido":
+                    # Garante que o filho promovido já inicie na posição do nó removido
                     self.posicoes_antigas = {}
                     for no in self.iterar_nos(self._raiz):
                         if no is self.filho_remocao:
@@ -550,8 +563,10 @@ class Visualizador(ArvoreAVL):
                             self.posicoes_antigas[no] = no.pos
                 else:
                     self.posicoes_antigas = {}
+    
+                # Remove efetivamente o nó na árvore AVL
                 self.deletaNo(valor)
-                # Captura as posições novas para animação global
+                # Calcula as novas posições-alvo após a remoção
                 if self._raiz:
                     self.atualizar_layout(
                         self._raiz,
@@ -562,6 +577,7 @@ class Visualizador(ArvoreAVL):
                     self.posicoes_novas = {no: no.posicao_alvo for no in self.iterar_nos(self._raiz)}
                 else:
                     self.posicoes_novas = {}
+                # Prepara para animação global dos nós após remoção
                 self.anim_frame = 0
                 self.animando = True
                 self.atual_animacao = None
@@ -569,10 +585,12 @@ class Visualizador(ArvoreAVL):
                 self.filho_pos_antiga = None
                 self.filho_pos_nova = None
             return
-
-        # Fase 2: animação do restante da árvore (inserção ou remoção padrão)
+    
+        # 3. Animação global (após inserção ou remoção)
+        # Se está ocorrendo animação geral dos nós (reposicionamento suave após mudanças)
         if self.animando:
             t = min(self.anim_frame / self.anim_passos, 1)
+            # Move todos os nós das posições antigas para as posições novas, conforme t
             for no in self.posicoes_novas:
                 x0, y0 = self.posicoes_antigas.get(no, no.posicao_alvo)
                 x1, y1 = self.posicoes_novas[no]
@@ -581,6 +599,7 @@ class Visualizador(ArvoreAVL):
                     y0 + (y1 - y0) * t
                 )
             self.anim_frame += 1
+            # Ao fim da animação, garante todos os nós exatamente na posição alvo e limpa variáveis
             if self.anim_frame > self.anim_passos:
                 self.animando = False
                 for no in self.posicoes_novas:
@@ -590,7 +609,9 @@ class Visualizador(ArvoreAVL):
                 self.sucessor_pos_alvo = None
                 self.no_removido = None
             return
-
+        
+        # 4. Mantém o layout atualizado mesmo sem animação
+        # Atualiza posições dos nós caso haja mudanças externas ou tela redimensionada
         if self._raiz:
             self.atualizar_layout(
                 self._raiz,
@@ -598,16 +619,19 @@ class Visualizador(ArvoreAVL):
                 self.area_arvore_y + 50,
                 self.largura / 4
             )
-
+    
+        # 5. Inicia nova animação da fila, se existir
         if not self.atual_animacao and self.fila_animacoes:
             self.atual_animacao = self.fila_animacoes.popleft()
             self.progresso_animacoes = 0
-
+    
+        # 6. Executa animações específicas da fila
         if self.atual_animacao:
             entry = self.atual_animacao
             tipo_acao = entry[0]
             nodo = entry[1] if len(entry) > 1 else None
-
+    
+            # Anima destaque de visitação ou busca
             if tipo_acao in ("visitar", "encontrar"):
                 self.progresso_animacoes += 0.03 * self.velocidade_animacoes
                 if self.progresso_animacoes >= 1:
@@ -617,20 +641,23 @@ class Visualizador(ArvoreAVL):
                     else:
                         self.no_destacado = {nodo}
                     self.atual_animacao = None
-
+    
+            # Animação de movimentação do sucessor (caso de remoção com dois filhos)
             elif tipo_acao == "mover_sucessor" and self.sucessor_remocao:
                 self.no_destacado = {self.sucessor_remocao}
                 self.animando_sucessor = True
                 self.anim_frame = 0
                 self.atual_animacao = None
-
+    
+            # Animações de rotação (AVL), se houver
             elif tipo_acao == "rotacionar":
                 self.progresso_animacoes += 0.01 * self.velocidade_animacoes
                 if self.progresso_animacoes >= 1:
                     self.atual_animacao = None
-
+    
             return
-
+    
+        # 7. Se não houverem mais animações, garante que os nós estejam na posição correta
         if self._raiz:
             self.animar_nos(self._raiz)
 
@@ -673,22 +700,23 @@ class Visualizador(ArvoreAVL):
 # Método para desenhar linhas entre os nós ----------------------------------------------------------------------------------
         
     def desenha_aresta(self, paiNode, node):
-        
+        # Durante a animação de substituição, não desenha a aresta do sucessor removido
         if self.animando_sucessor and node == self.sucessor_remocao:
-            # Quando a animação da substituição do nó removido pelo sucessor está sendo feita a aresta não é desenhada
             return
     
+        # Calcula as posições dos nós pai e filho, considerando o deslocamento (offset) atual da tela
         x1, y1 = paiNode.pos[0] + self.offset_x, paiNode.pos[1] + self.offset_y
         x2, y2 = node.pos[0] + self.offset_x, node.pos[1] + self.offset_y
-
-        # Ângulo da linha
+    
+        # Calcula o ângulo da linha entre o pai e o filho, usando aritmética trigonométrica
         angle = math.atan2(y2 - y1, x2 - x1)
-
-        # Ponto inicial e final da linha (com margem no círculo)
+    
+        # Define o ponto inicial da linha na borda do círculo do nó pai
         start = (x1 + math.cos(angle) * self.raio_no, y1 + math.sin(angle) * self.raio_no)
+        # Define o ponto final da linha na borda do círculo do nó filho
         end = (x2 - math.cos(angle) * self.raio_no, y2 - math.sin(angle) * self.raio_no)
-
-        # Desenha a linha principal
+    
+        # Desenha a linha representando a ligação (aresta) entre pai e filho na árvore
         pygame.draw.line(self.tela, self.paleta["line"], start, end, 3)
         
 # Método para mostrar instruções --------------------------------------------------------------------------------------------
